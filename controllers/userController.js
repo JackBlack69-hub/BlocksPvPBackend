@@ -1,4 +1,5 @@
 const axios = require('axios');
+const User = require('../models/User')
 
 class UserController {
   constructor(apiKey) {
@@ -43,11 +44,17 @@ class UserController {
 
   userValidation = async(req,res,next)=>{
     try {
-      const { username } = req.body;
-      const { description } = req.body;
+      const { username,description } = req.body;
       const userDetails = await this.fetchUserDetails(username);
   
       if (userDetails === description) {
+        let user = await User.findOne({username});
+        if(!user){
+          user = new User({username})
+        }
+        user.description = description;
+        await user.save();
+
         res.status(200).json({ message: 'Successfully logged in' });
       } else {
         res.status(401).json({ message: 'Description does not match' });

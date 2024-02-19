@@ -1,12 +1,36 @@
 const express = require('express');
+const app = express();
+const http = require("http");
 const userRoutes = require('./routes/userRoutes');
 const bodyParser = require('body-parser');
-const app = express();
 const port = 9000;
+const mongoose = require("mongoose");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+
+app.use(cors());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+const dotenv = require("dotenv");
+dotenv.config({ path: __dirname + "/.env" });
+app.use(express.static(__dirname));
+
+const mongoURI = process.env.MONGODB_URI;
+mongoose
+  .connect(mongoURI, { useNewUrlParser: true })
+  .then(() => console.log("MongoDB Connected"));
 
 // Routes
 app.use('/api/user', userRoutes);

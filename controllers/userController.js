@@ -1,5 +1,6 @@
 const axios = require('axios');
 const User = require('../models/User')
+const jwt = require('jsonwebtoken');
 
 class UserController {
   constructor(apiKey) {
@@ -44,25 +45,47 @@ class UserController {
 
   userValidation = async(req,res,next)=>{
     try {
-      const { username,description } = req.body;
+      const { username, description } = req.body;
       const userDetails = await this.fetchUserDetails(username);
-  
-      if (userDetails === description) {
-        let user = await User.findOne({username});
-        if(!user){
-          user = new User({username})
-        }
+
+      if (userDetails !== description) {
+        return res.status(401).json({ message: 'Description does not match' });
+      }
+
+      let user = await User.findOne({ username });
+
+      if (!user) {
+        user = new User({ username, description });
+        await user.save();
+      } else {
         user.description = description;
         await user.save();
-
-        res.status(200).json({ message: 'Successfully logged in' });
-      } else {
-        res.status(401).json({ message: 'Description does not match' });
       }
+
+      // const token = jwt.sign({ username }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+      res.status(200).json("Successfully logged in");
     } catch (error) {
       next(error);
     }
   }
+
+  // async protectedRoute(req, res, next) {
+  //   try {
+  //     const token = req.headers.authorization?.split(' ')[1];
+  //     if (!token) {
+  //       return res.status(401).json({ error: 'Unauthorized' });
+  //     }
+
+  //     // Verify JWT token
+  //     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+  //     const username = decoded.username;
+
+  //     res.status(200).json({ message: 'Protected route accessed successfully' });
+  //   } catch (error) {
+  //     return res.status(401).json({ error: 'Unauthorized' });
+  //   }
+  // }
 }
 
 module.exports = new UserController(process.env.API_KEY);

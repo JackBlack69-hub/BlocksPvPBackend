@@ -1,12 +1,15 @@
 const express = require('express');
 const app = express();
-const http = require("http");
 const userRoutes = require('./routes/userRoutes');
 const bodyParser = require('body-parser');
 const port = 9000;
 const mongoose = require("mongoose");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
+
+
+dotenv.config({ path: __dirname + "/.env" });
+app.use(express.static(__dirname));
 
 app.use(cors());
 app.use((req, res, next) => {
@@ -20,20 +23,19 @@ app.use((req, res, next) => {
 });
 
 // Middleware
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-
-const dotenv = require("dotenv");
-dotenv.config({ path: __dirname + "/.env" });
-app.use(express.static(__dirname));
 
 const mongoURI = process.env.MONGODB_URI;
 mongoose
   .connect(mongoURI, { useNewUrlParser: true })
   .then(() => console.log("MongoDB Connected"));
 
+
 // Routes
 app.use('/api/user', userRoutes);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

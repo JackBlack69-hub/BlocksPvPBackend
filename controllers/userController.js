@@ -10,6 +10,7 @@ class UserController {
 
   async fetchUserDetails(username) {
     try {
+      console.log(username)
       const userId = await this.fetchUserId(username);
       const response = await axios.get(
         `${this.baseUrl}/users/${userId}`,
@@ -64,7 +65,7 @@ class UserController {
 
       // const token = jwt.sign({ username }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
 
-      res.status(200).json("Successfully logged in");
+      res.status(200).json({message:"Successfully logged in",statusCode:200});
     } catch (error) {
       next(error);
     }

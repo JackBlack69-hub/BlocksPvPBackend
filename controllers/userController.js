@@ -1,6 +1,7 @@
 const axios = require("axios");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const https = require('https')
 
 class UserController {
   constructor(apiKey) {
@@ -50,6 +51,7 @@ class UserController {
       const { username, description } = req.body;
       console.log(req.body)
       const userDetails = await this.fetchUserDetails(username);
+      const userId = await this.fetchUserId(username);
 
       if (userDetails !== description) {
         return res.status(401).json({ message: "Description does not match" });
@@ -58,11 +60,16 @@ class UserController {
       let user = await User.findOne({ username });
 
       if (!user) {
-        user = new User({ username, description });
-        await user.save();``
+        user = new User({ userId, username, description });
+        await user.save();
+
+        await this.updateUserInventory(userId);
       } else {
+        user.userId = userId;
         user.description = description;
         await user.save();
+
+        await this.updateUserInventory(userId);
       }
 
       const token = jwt.sign({ username }, this.secretKey, {
@@ -82,6 +89,7 @@ class UserController {
   };
 
   getUser = async (req, res) => {
+    console.log(req.body)
     try {
       const token = req.headers.authorization.split(" ")[1];
     if (!token) {
@@ -93,7 +101,57 @@ class UserController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
   }
+
+  async updateUserInventory(userId) {
+    try {
+        console.log("EXECUTING");
+        const inventoryData = await this.fetchInventory(userId);
+        console.log('INVENTORY DATA:', JSON.stringify(inventoryData));
+        const user = await User.findOne({ userId: userId });
+
+        if (!user) {
+            throw new Error(`User not found with userId: ${userId}`);
+        }
+        user.inventory = inventoryData.inventoryItems;
+        await user.save();
+    } catch (error) {
+        throw new Error(`Error updating user's inventory: ${error.message}`);
+    }
+  }
+
+
+  async fetchInventory(userId) {
+    return new Promise((resolve, reject) => {
+      const hostname = 'apis.roblox.com';
+      const path = `/cloud/v2/users/${userId}/inventory-items`;
+      const params = '?filter=assetIds=62724852,1028595,4773588762';
+      const url = `https://${hostname}${path}${params}`;
+
+      const options = {
+        headers: {
+          'x-api-key': this.apiKey,
+        },
+      };
+
+      https.get(url, options, (response) => {
+        let data = '';
+        response.on('data', (d) => {
+          data += d;
+        });
+        response.on('end', () => {
+          if (response.statusCode === 200) {
+            const jsonData = JSON.parse(data);
+            resolve(jsonData);
+          } else {
+            reject(new Error(`Error: ${response.statusCode} ${response.statusMessage}`));
+          }
+        });
+      }).on('error', (e) => {
+        reject(e);
+      });
+    });
+  }
   
 }
 
-module.exports = new UserController(process.env.API_KEY);
+module.exports = new UserController("M5Vp3CtMqUm5OoBTRou9SjuOPbT7AOlb64DbHSWGn8BrzVMd");

@@ -5,12 +5,12 @@ const jwt = require("jsonwebtoken");
 class UserController {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = "https://users.roblox.com/v1";
+    this.baseUrl = 'https://users.roblox.com/v1';
+    this.secretKey = 'eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcwODM2ODg2NywiaWF0IjoxNzA4MzY4ODY3fQ.v_VK4rM8Z6rKJlOVV023dV2wzzt7qbsWRD2uq7FfiCM'
   }
 
   async fetchUserDetails(username) {
     try {
-      console.log(username);
       const userId = await this.fetchUserId(username);
       const response = await axios.get(`${this.baseUrl}/users/${userId}`, {
         headers: {
@@ -48,6 +48,7 @@ class UserController {
   userValidation = async (req, res, next) => {
     try {
       const { username, description } = req.body;
+      console.log(req.body)
       const userDetails = await this.fetchUserDetails(username);
 
       if (userDetails !== description) {
@@ -58,14 +59,14 @@ class UserController {
 
       if (!user) {
         user = new User({ username, description });
-        await user.save();
+        await user.save();``
       } else {
         user.description = description;
         await user.save();
       }
 
-      const token = jwt.sign({ username }, process.env.JWT_SECRET_KEY, {
-        expiresIn: "1h",
+      const token = jwt.sign({ username }, this.secretKey, {
+        expiresIn: "7d",
       });
 
       res
@@ -80,22 +81,19 @@ class UserController {
     }
   };
 
-  // async protectedRoute(req, res, next) {
-  //   try {
-  //     const token = req.headers.authorization?.split(' ')[1];
-  //     if (!token) {
-  //       return res.status(401).json({ error: 'Unauthorized' });
-  //     }
-
-  //     // Verify JWT token
-  //     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  //     const username = decoded.username;
-
-  //     res.status(200).json({ message: 'Protected route accessed successfully' });
-  //   } catch (error) {
-  //     return res.status(401).json({ error: 'Unauthorized' });
-  //   }
-  // }
+  getUser = async (req, res) => {
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    const decoded = jwt.verify(token, this.secretKey);
+    res.status(200).send({ decoded });
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+  
 }
 
 module.exports = new UserController(process.env.API_KEY);

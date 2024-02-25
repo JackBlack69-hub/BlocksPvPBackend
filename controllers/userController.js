@@ -1,28 +1,27 @@
-const axios = require('axios');
-const User = require('../models/User')
-const jwt = require('jsonwebtoken');
+const axios = require("axios");
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 class UserController {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://users.roblox.com/v1';
+    this.baseUrl = "https://users.roblox.com/v1";
   }
 
   async fetchUserDetails(username) {
     try {
-      console.log(username)
+      console.log(username);
       const userId = await this.fetchUserId(username);
-      const response = await axios.get(
-        `${this.baseUrl}/users/${userId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`
-          }
-        }
-      );
+      const response = await axios.get(`${this.baseUrl}/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      });
       return response.data.description;
     } catch (error) {
-      throw new Error(`Error fetching user details: ${error.response?.data ?? error.message}`);
+      throw new Error(
+        `Error fetching user details: ${error.response?.data ?? error.message}`
+      );
     }
   }
 
@@ -33,24 +32,26 @@ class UserController {
         { usernames: [username] },
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
-          }
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.apiKey}`,
+          },
         }
       );
       return response.data.data[0].id;
     } catch (error) {
-      throw new Error(`Error fetching user ID: ${error.response?.data ?? error.message}`);
+      throw new Error(
+        `Error fetching user ID: ${error.response?.data ?? error.message}`
+      );
     }
   }
 
-  userValidation = async(req,res,next)=>{
+  userValidation = async (req, res, next) => {
     try {
       const { username, description } = req.body;
       const userDetails = await this.fetchUserDetails(username);
 
       if (userDetails !== description) {
-        return res.status(401).json({ message: 'Description does not match' });
+        return res.status(401).json({ message: "Description does not match" });
       }
 
       let user = await User.findOne({ username });
@@ -63,13 +64,21 @@ class UserController {
         await user.save();
       }
 
-      // const token = jwt.sign({ username }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+      const token = jwt.sign({ username }, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1h",
+      });
 
-      res.status(200).json({message:"Successfully logged in",statusCode:200});
+      res
+        .status(200)
+        .json({
+          message: "Successfully logged in",
+          statusCode: 200,
+          token: token,
+        });
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   // async protectedRoute(req, res, next) {
   //   try {

@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const userRoutes = require("./routes/userRoutes");
+const coinFlipRoutes = require("./routes/coinFlipRoutes")
 const bodyParser = require("body-parser");
 const port = 9000;
 const mongoose = require("mongoose");
@@ -42,6 +43,7 @@ mongoose
 
 // Routes
 app.use("/api/user", userRoutes);
+app.use("/api/coinFlip", coinFlipRoutes);
 
 io.on("connection", (socket) => {
   console.log("connected");
